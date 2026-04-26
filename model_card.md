@@ -106,3 +106,36 @@ The automated unit tests in `tests/test_recommender.py` confirm that the pop/hap
 **What surprised me about simple algorithms:** The conflicting-preferences profile was the most revealing. A user who wants chill mood but high energy receives five intense rock and hip-hop tracks, zero ambient, zero chill. The system has no way to negotiate between contradictory signals; it just adds the numbers and the louder weight wins. Spotify's magic partly comes from having millions of songs: with enough catalog depth, even a naive scoring rule will surface something great. At 18 songs, every flaw is immediately visible.
 
 **What I would try next:** Add a second user profile comparison mode: given two users, find the songs that score in the top 10 for both simultaneously. This "group recommendation" problem reveals another layer of bias: whose preferences get compromised when they conflict.
+
+---
+
+## 10. AI Collaboration Reflection (Final Project Extension)
+
+### Evaluator Results
+
+The `src/evaluator.py` harness runs 8 test cases covering standard use cases, edge cases, and the diversity penalty. All 8 cases pass (17/17 named checks). Full output:
+
+```
+Cases:  8/8 passed (100%)
+Checks: 17/17 passed (100%)
+```
+
+Key findings from structured evaluation:
+- The scoring engine is fully deterministic: same inputs always produce the same outputs.
+- Energy-focused mode predictably moves Gym Hero (energy 0.93) from #2 to #5 for a user targeting energy 0.80, in favor of Rooftop Lights (energy 0.76). The weight preset change has a measurable, testable effect.
+- An unknown genre ("bossa-nova") still returns 5 results with positive scores because the energy similarity component is always non-zero. The system never crashes on out-of-catalog input.
+- The diversity penalty reduces the second same-genre song's score from 3.21 to below 3.15, confirming the penalty arithmetic is applied correctly.
+
+### Helpful AI Suggestion
+
+When designing the Claude tool definition (`TOOLS` in `src/agent.py`), AI suggested enumerating all valid genre and mood values in the tool's `input_schema` description. This was genuinely helpful: it prevents Claude from hallucinating genre strings like "lofi-hop" or "alt-jazz" that don't exist in the CSV catalog. Without the explicit list, Claude might confidently pass a genre value that returns zero matches, and the user would see irrelevant fallback results with no explanation of why. The constrained schema makes the system's limitation (exact string matching) a feature rather than a silent failure.
+
+### Flawed AI Suggestion
+
+AI initially recommended using `claude-opus-4-7` (the most capable and most expensive Claude model) for the agent. For a system that only needs to parse a few words of intent ("study music", "workout") and write a short explanation, Opus is substantial overkill. More importantly, this is a classroom project where students fund their own API usage; a request that costs $0.0003 with Haiku costs roughly $0.015 with Opus -- a 50x difference. The AI's default of "always use the most powerful model" does not account for cost context or the actual complexity of the task. I overrode the recommendation to `claude-haiku-4-5`, which handles intent extraction and conversational explanation as well as needed at a fraction of the cost.
+
+### Broader Reflection on AI-Assisted Development
+
+Building this system made clear that AI tools are most valuable at the design boundary layer: structuring schemas, naming things precisely, catching type mismatches early. They are least valuable for judgment calls about trade-offs: whether to optimize for cost vs. capability, whether a limitation should be documented or fixed, what a "good" recommendation actually means for a user. Those decisions require knowing the context, the users, and the goals -- knowledge the AI doesn't have unless the developer supplies it explicitly.
+
+The agentic workflow in this project is a small example of a broader pattern: AI can do a planning step (extract structured intent from natural language) and an explanation step (narrate results in context), but the scoring logic in between is a human-designed rule with human-chosen weights. Understanding which parts of a pipeline to hand to AI and which parts to keep deterministic is one of the most important judgment calls in applied AI engineering.
