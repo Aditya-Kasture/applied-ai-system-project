@@ -113,11 +113,11 @@ The automated unit tests in `tests/test_recommender.py` confirm that the pop/hap
 
 ### Evaluator Results
 
-The `src/evaluator.py` harness runs 8 test cases covering standard use cases, edge cases, and the diversity penalty. All 8 cases pass (17/17 named checks). Full output:
+The `src/evaluator.py` harness runs 8 test cases covering standard use cases, edge cases, and the diversity penalty. All 8 cases pass (18/18 named checks). Full output:
 
 ```
 Cases:  8/8 passed (100%)
-Checks: 17/17 passed (100%)
+Checks: 18/18 passed (100%)
 ```
 
 Key findings from structured evaluation:

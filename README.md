@@ -8,9 +8,15 @@ The original Module 3 project (VibeFinder 1.0) scored 18 songs against hard-code
 
 ## Demo Walkthrough
 
-[Loom video link — record after final testing and paste here]
+To see the full system in action, run each mode in your terminal:
 
-The video demonstrates: (1) an end-to-end agent conversation, (2) the intermediate tool call (the agentic planning step), (3) the evaluation harness pass/fail run, and (4) a guardrail case where no good match exists.
+```bash
+python -m src.agent       # interactive end-to-end conversation with tool calls visible in logs
+python -m src.evaluator   # evaluation harness pass/fail run (no API key needed)
+python -m src.main        # batch simulation across 9 profiles
+```
+
+The agent logs show the intermediate planning step (`Tool call → genre=... mood=... energy=...`) for every request, making the agentic decision observable without a video.
 
 ---
 
@@ -209,6 +215,44 @@ The workflow is multi-step because the output of step 1 (parameter selection) be
 
 ---
 
+## Specialization Behavior
+
+The agent uses a **specialized system prompt** with few-shot response format examples (in `src/agent.py`, `SYSTEM_PROMPT`). This constrains Claude's tone, structure, and honesty norms in ways that differ measurably from baseline Claude behavior.
+
+### What the specialization does
+
+The system prompt instructs Claude to:
+- Always call the tool before generating any recommendations (not guess from memory)
+- Follow a specific response structure: use-case framing → numbered song list with genre tags and concrete reasons → honest note about catalog limits
+- Acknowledge follow-up refinements explicitly before re-running the tool
+- Never oversell weak matches when no good genre fit exists
+
+Three inline few-shot examples in the system prompt demonstrate the expected format for a study request, a workout request, and a follow-up refinement. These are format-level examples — they show structure and tone, not song titles — so they generalize across any user request.
+
+### Baseline vs. specialized comparison
+
+**Baseline Claude** (no system prompt, asked: "give me study music"):
+
+> Sure! Here are some great songs for studying: "Weightless" by Marconi Union, "Experience" by Ludovico Einaudi, lo-fi hip hop playlists on YouTube are very popular for studying...
+
+**VibeFinder** (same query through the specialized agent):
+
+> [Tool call: genre=lofi, mood=focused, energy=0.35, likes_acoustic=True, scoring_mode=mood_first]
+>
+> Here are five tracks from the catalog for focused study:
+>
+> 1. Library Rain (lofi) — score 5.18 — Calm and acoustic, tagged "peaceful" and "nostalgic".
+> 2. Midnight Coding (lofi) — score 5.17 — Focused mood tag matches your request exactly.
+> 3. Spacewalk Thoughts (ambient) — score 4.10 — Drifts into ambient territory but stays chill.
+> ...
+
+The specialization produces three observable differences from baseline:
+1. **Grounded in catalog** — only songs from `songs.csv` are named; no hallucinated tracks
+2. **Visible planning step** — parameters are logged before results are shown
+3. **Honest scoping** — the agent states when catalog coverage is thin rather than padding with weak matches
+
+---
+
 ## Design Decisions
 
 **Why Claude Haiku?** The agent uses `claude-haiku-4-5` — the fastest, cheapest Claude model. For a classroom project where students pay their own API costs, Haiku delivers excellent intent extraction and explanation quality at a fraction of Opus or Sonnet pricing. The scoring logic is handled entirely by the deterministic Python engine; Claude only needs to parse intent and write summaries.
@@ -226,7 +270,7 @@ The workflow is multi-step because the output of step 1 (parameter selection) be
 
 ## Reliability and Evaluation
 
-The `src/evaluator.py` harness runs 8 test cases and reports pass/fail for each named check:
+The `src/evaluator.py` harness runs 8 test cases and reports pass/fail for each of 18 named checks:
 
 | Case | What it tests |
 |---|---|
@@ -243,7 +287,7 @@ The `src/evaluator.py` harness runs 8 test cases and reports pass/fail for each 
 
 ```
   Cases:  8/8 passed (100%)
-  Checks: 17/17 passed (100%)
+  Checks: 18/18 passed (100%)
 
   [+] 1. Pop fan gets pop song at #1 (balanced mode)
          Top result: Sunrise City (pop) score=4.26
@@ -263,7 +307,7 @@ The `src/evaluator.py` harness runs 8 test cases and reports pass/fail for each 
 
 ## Testing Summary
 
-All 8 evaluation cases pass with 17/17 named checks succeeding. The scoring engine is deterministic — given the same inputs it always returns the same outputs — so once a case passes it will continue to pass unless the engine logic changes.
+All 8 evaluation cases pass with 18/18 named checks succeeding. The scoring engine is deterministic — given the same inputs it always returns the same outputs — so once a case passes it will continue to pass unless the engine logic changes.
 
 **What worked:**
 - Genre, mood, energy, and tag matching all behave as specified.
