@@ -8,7 +8,7 @@ The original Module 3 project (VibeFinder 1.0) scored 18 songs against hard-code
 
 ## Demo Walkthrough
 
-Loom video link - 
+Loom video link - https://www.loom.com/share/405c72b51c6e414a980ce3446637f6b4
 
 To see the full system in action, run each mode in your terminal:
 
